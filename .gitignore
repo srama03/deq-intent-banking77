@@ -1,0 +1,61 @@
+# Python junk
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# environments
+.venv/
+venv/
+env/
+ENV/
+
+# notebooks
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Data & experiment artifacts
+data/
+results/
+runs/
+logs/
+outputs/
+
+# Model checkpoints
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.onnx
+
+# Config secrets
+.env
+.env.*
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Coverage / testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Packaging
+dist/
+build/
+*.egg-info/
+
+# Misc
+*.log
+
+
+
+
+
+
