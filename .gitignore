@@ -16,7 +16,7 @@ ENV/
 *.nbconvert.ipynb
 
 # Data & experiment artifacts
-data/
+datasets/
 results/
 runs/
 logs/
