@@ -1,0 +1,46 @@
+experiment:
+  name: "deq_transformer_banking77"
+  seed: 42
+  device: "auto"
+  output_dir: "results/runs"
+
+data:
+  dataset_name: "banking77"
+  text_col: "text"
+  label_col: "label"
+  max_len: 64
+  tokenizer_name: "bert-base-uncased"
+
+model:
+  type: "deq_transformer"
+  d_model: 256
+  n_heads: 4
+  d_ff: 1024
+  dropout: 0.1
+  activation: "gelu"
+  norm: "preln"
+  pooling: "mean"
+
+deq:
+  solver: "fixed_point"
+  tol: 1.0e-3               
+  max_iters_train: 25
+  max_iters_eval: 50
+  log_convergence: true
+
+train:
+  batch_size: 32
+  lr: 0.0003
+  weight_decay: 0.01
+  epochs: 10
+  warmup_ratio: 0.1
+  grad_clip_norm: 1.0
+  eval_every_steps: 200
+  save_best: true
+
+metrics:
+  primary: "macro_f1"
+  report:
+    - "accuracy"
+    - "macro_f1"
+
