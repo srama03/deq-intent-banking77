@@ -1,22 +1,26 @@
 from datasets import load_dataset
 import numpy as np
 
-def load_banking77():
+def load_banking77(val_ratio=0.1, seed=42):
     """
     loads the dataset from hugging face datasets
     returns:
         train_ds
         test_ds
+        val_ds
         label_names-> list[str]; maps label id to label name
     """
     ds = load_dataset("banking77")
-    train_ds = ds["train"]
+    full_train = ds["train"]
     test_ds = ds["test"]
+    split = full_train.train_test_split(test_size=val_ratio, seed=seed, shuffle=True)
+    train_ds = split["train"]
+    val_ds = split["test"]
 
-    # get label_names from train_ds.features["label"]
-    label_names = train_ds.features["label"].names
+    # get label_names from full_train.features["label"]
+    label_names = full_train.features["label"].names
     
-    return train_ds, test_ds, label_names
+    return train_ds, val_ds, test_ds, label_names
 
 
 def get_label_stats(train_ds):

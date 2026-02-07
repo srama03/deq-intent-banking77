@@ -13,7 +13,7 @@ class BaselineModel(nn.Module):
     num_labels=77):
         super().__init__()
         self.token_embeddings = nn.Embedding(vocab_size, d_model)
-        self.pos_embeddings = nn.Embeddings(max_len, d_model)
+        self.pos_embeddings = nn.Embedding(max_len, d_model)
         self.encoder_layer = nn.TransformerEncoderLayer(
             d_model,
             n_heads, 
@@ -22,7 +22,7 @@ class BaselineModel(nn.Module):
             activation="gelu", 
             batch_first=True,
             norm_first=True)
-        self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers)
+        self.encoder = nn.TransformerEncoder(self.encoder_layer, num_layers)
         self.classifier = nn.Linear(d_model, num_labels)
 
     def forward(self, input_ids, attention_mask):
