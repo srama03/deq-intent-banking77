@@ -8,9 +8,11 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
+import argparse
 
 from src.data.load_data import load_banking77
 from src.models.baseline_transformer import BaselineModel
+from src.models.deq_transformer import DEQModel
 
 def collate_batch(batch, tokenizer, max_len=64):
     """
@@ -41,7 +43,7 @@ def train_one_epoch(model, dataloader, optimizer, device):
     all_preds = []
     all_labels = []
     # get batch:
-    for batch in dataloader:
+    for step, batch in enumerate(dataloader, start=1):
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
         labels = batch["labels"].to(device)
@@ -52,6 +54,9 @@ def train_one_epoch(model, dataloader, optimizer, device):
         loss = loss_fn(logits, labels)
         preds = logits.argmax(dim=-1)
         correct+= (preds == labels).sum().item()
+        # get convergence logs if applicable (if model is deq)
+        if step % 200 == 0 and hasattr(model, "last_iters") and model.last_iters is not None:
+            print("deq (train):", "total iters: ", model.last_iters, "residual: ", model.last_residual)
         # convert to list for f1
         labels_cpu = labels.cpu().tolist()
         preds_cpu = preds.cpu().tolist()
@@ -153,15 +158,33 @@ def main(config_path="configs/baseline.yaml"):
 
     # model
     vocab_size = tokenizer.vocab_size
-    model = BaselineModel(
-        vocab_size=vocab_size,
-        max_len=max_len,
-        d_model=int(cfg["model"]["d_model"]),
-        n_heads=int(cfg["model"]["n_heads"]),
-        num_layers=int(cfg["model"]["num_layers"]),
-        d_ff=int(cfg["model"]["d_ff"]),
-        dropout=float(cfg["model"]["dropout"]),
-        num_labels=num_labels).to(device)
+    model_type = cfg["model"]["type"]
+    if model_type =="baseline_transformer":
+        model = BaselineModel(
+            vocab_size=vocab_size,
+            max_len=max_len,
+            d_model=int(cfg["model"]["d_model"]),
+            n_heads=int(cfg["model"]["n_heads"]),
+            num_layers=int(cfg["model"]["num_layers"]),
+            d_ff=int(cfg["model"]["d_ff"]),
+            dropout=float(cfg["model"]["dropout"]),
+            num_labels=num_labels).to(device)
+    elif model_type == "deq_transformer":
+        model = DEQModel(
+            vocab_size=vocab_size,
+            max_len=max_len,
+            tol=float(cfg["deq"]["tol"]),
+            max_iters_train=int(cfg["deq"]["max_iters_train"]),
+            max_iters_eval=int(cfg["deq"]["max_iters_eval"]),
+            alpha=float(cfg["deq"]["alpha"]),
+            d_model=int(cfg["model"]["d_model"]),
+            n_heads=int(cfg["model"]["n_heads"]),
+            d_ff=int(cfg["model"]["d_ff"]),
+            dropout=float(cfg["model"]["dropout"]),
+            num_labels=num_labels).to(device)
+    else:
+        raise ValueError(f"unknown model.type: {model_type}")
+        
 
     # optimizer
     optimizer = torch.optim.AdamW(
@@ -171,11 +194,11 @@ def main(config_path="configs/baseline.yaml"):
     )
 
     # train
-    epochs = int(cfg["train"]["epochs"])
-    #epochs = 2
+    #epochs = int(cfg["train"]["epochs"])
+    epochs = 1
     run_dir = os.path.join(cfg["experiment"]["output_dir"], cfg["experiment"]["name"]) # folder to save results/runs
     os.makedirs(run_dir, exist_ok=True) # creates said folder if it doesnt alr exist
-    best_path = os.path.join(run_dir, "baseline_best.pt") # file name for the best model
+    best_path = os.path.join(run_dir, f"{model_type}_best.pt") # file name for the best model
 
     best_f1 = float("-inf")
     best_epoch = -1
@@ -185,6 +208,7 @@ def main(config_path="configs/baseline.yaml"):
         val_stats = eval_one_epoch(model, val_loader, device)
         print("train:", train_stats)
         print("val:", val_stats)
+        """
         current_f1 = val_stats["val_macro_f1"]
         if current_f1 > best_f1:
             best_f1 = current_f1
@@ -204,13 +228,18 @@ def main(config_path="configs/baseline.yaml"):
     
     ckpt = torch.load(best_path, map_location=device)
     model.load_state_dict(ckpt["model_state_dict"])
-    # testing timeeee
+    """
+        
+    """# testing timeeee
     test_stats = eval_one_epoch(model, test_loader, device)
     test_stats = {k.replace("val_", "test_"): v for k, v in test_stats.items()}
-    print("test:", test_stats)
+    print("test:", test_stats)"""
 
 
     print("\nDone.")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, default="configs/baseline.yaml")
+    args = parser.parse_args()
+    main(config_path=args.config)
