@@ -39,29 +39,39 @@ class DEQModel(nn.Module):
 
         
 
-    def fixed_point_solver(self, x, padding):
+    def fixed_point_solver(self, x, padding, trace=False):
         # x: embedded inputs (B,T,D)
         # z: initialised at x=> faster convergence
+        trace_points = {0, 1, 2, 5, 10, 20, 30, 60, 100} #debugging
+        trace_log = []
         z = x
         iters_used=0
         residual = None
         max_iters = self.max_iters_train if self.training else self.max_iters_eval
         for i in range(max_iters):
-            z_next = self.layer(z, src_key_padding_mask=padding) + x # f(z) uses a single encoder layer; x conditions via initialization (z0=x)
+            z_next = self.layer(z, src_key_padding_mask=padding) + x # f(z) uses a single encoder layer; x conditions via initialization (z0=x) and explicitly injected at every iter
             z_new = (1-self.alpha)*z + self.alpha*z_next # damped to prevent oscillations
             # how much z changed-- need residual < tolerance -> measures closeness to FP
             residual = (z_new - z).norm() / (z_new.norm() + 1e-6) # abs mean scales with embedding magnitude and sequence length distribution, hence relative residual
+
+            if trace and i in trace_points:
+                trace_log.append((i, float(residual.detach().cpu())))
+
             z = z_new
             iters_used+=1
-            
             if residual < self.tol:
-                break
+                break           
         self.last_iters=iters_used
         self.last_residual=float(residual.detach().cpu()) if residual is not None else None
+        self.last_early_stop = (residual is not None and residual < self.tol)
+        if trace:
+            print("trace:", trace_log)
+            print("final:", {"iters": self.last_iters, "residual": self.last_residual, "early": self.last_early_stop})
+
         return z
 
 
-    def forward(self, input_ids, attention_mask):
+    def forward(self, input_ids, attention_mask, trace=False):
         """
         input_ids: (B, T)
         attention_mask: (B,T)
@@ -77,7 +87,7 @@ class DEQModel(nn.Module):
         # padding
         padding = (attention_mask==0)
         # fixed pt solving
-        z = self.fixed_point_solver(x, padding=padding )
+        z = self.fixed_point_solver(x, padding=padding, trace=trace)
         # mean pooling
         mask = attention_mask.unsqueeze(-1).float()
         summation = (z*mask).sum(dim=1)
