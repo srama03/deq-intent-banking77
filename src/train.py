@@ -13,6 +13,7 @@ import argparse
 from src.data.load_data import load_banking77
 from src.models.baseline_transformer import BaselineModel
 from src.models.deq_transformer import DEQModel
+from src.models.deq_transformer import DEQIImplicitModel
 
 def collate_batch(batch, tokenizer, max_len=64):
     """
@@ -118,7 +119,7 @@ def eval_one_epoch(model, dataloader, device):
         "val_acc": correct / max(seen, 1),
         "val_macro_f1": macro_f1
     }
-
+#ADD BRANCHING FOR TRUE DEQ 
 
 def main(config_path="configs/baseline.yaml"):
     # configs

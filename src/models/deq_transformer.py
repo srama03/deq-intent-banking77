@@ -33,7 +33,7 @@ class DEQModel(nn.Module):
         self.max_iters_train = max_iters_train
         self.max_iters_eval = max_iters_eval
         self.alpha = alpha
-        # convergence logging (filled during forward)
+        # convergence (filled during forward)
         self.last_iters = None
         self.last_residual = None
 
@@ -49,9 +49,9 @@ class DEQModel(nn.Module):
         residual = None
         max_iters = self.max_iters_train if self.training else self.max_iters_eval
         for i in range(max_iters):
-            z_next = self.layer(z, src_key_padding_mask=padding) + x # f(z) uses a single encoder layer; x conditions via initialization (z0=x) and explicitly injected at every iter
-            z_new = (1-self.alpha)*z + self.alpha*z_next # damped to prevent oscillations
-            # how much z changed-- need residual < tolerance -> measures closeness to FP
+            z_next = self.layer(z, src_key_padding_mask=padding) + x # f(z) uses a single encoder layer; x conditions via z0=x +  explicitly injected at every iter
+            z_new = (1-self.alpha)*z + self.alpha*z_next # prevent oscillations
+            # how much z changed-- need residual < tolerance ->  closeness to FP
             residual = (z_new - z).norm() / (z_new.norm() + 1e-6) # abs mean scales with embedding magnitude and sequence length distribution, hence relative residual
 
             if trace and i in trace_points:
