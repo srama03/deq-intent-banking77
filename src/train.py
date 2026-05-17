@@ -13,7 +13,7 @@ import argparse
 from src.data.load_data import load_banking77
 from src.models.baseline_transformer import BaselineModel
 from src.models.deq_transformer import DEQModel
-from src.models.deq_transformer import DEQIImplicitModel
+from src.models.deq_implicit import DEQImplicitModel
 
 def collate_batch(batch, tokenizer, max_len=64):
     """
@@ -187,6 +187,19 @@ def main(config_path="configs/baseline.yaml"):
             d_ff=int(cfg["model"]["d_ff"]),
             dropout=float(cfg["model"]["dropout"]),
             num_labels=num_labels).to(device)
+    elif model_type == "deq_implicit":
+        model = DEQImplicitModel(
+        vocab_size=vocab_size,
+        max_len=max_len,
+        tol=float(cfg["deq"]["tol"]),
+        max_iters_train=int(cfg["deq"]["max_iters_train"]),
+        max_iters_eval=int(cfg["deq"]["max_iters_eval"]),
+        alpha=float(cfg["deq"]["alpha"]),
+        d_model=int(cfg["model"]["d_model"]),
+        n_heads=int(cfg["model"]["n_heads"]),
+        d_ff=int(cfg["model"]["d_ff"]),
+        dropout=float(cfg["model"]["dropout"]),
+        num_labels=num_labels).to(device)
     else:
         raise ValueError(f"unknown model.type: {model_type}")
         
@@ -229,18 +242,21 @@ def main(config_path="configs/baseline.yaml"):
                 best_path
             )
             print(f"Best checkpoint: epoch={best_epoch}, val_macro_f1={best_f1:.4f}")
+    
     print(f"\nBest checkpoint: epoch={best_epoch}, val_macro_f1={best_f1:.4f}")
     print(f"Saved to: {best_path}")
+    
     
     
     ckpt = torch.load(best_path, map_location=device)
     model.load_state_dict(ckpt["model_state_dict"])
     
-        
+    
     # testing timeeee
     test_stats = eval_one_epoch(model, test_loader, device)
     test_stats = {k.replace("val_", "test_"): v for k, v in test_stats.items()}
     print("test:", test_stats)
+    
 
 
     print("\nDone.")

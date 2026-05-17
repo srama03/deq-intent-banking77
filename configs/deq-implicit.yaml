@@ -27,6 +27,7 @@ deq:
   max_iters_train: 25
   max_iters_eval: 50
   log_convergence: true
+  alpha: 0.5
 
 train:
   batch_size: 32

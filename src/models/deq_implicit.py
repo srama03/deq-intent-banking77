@@ -4,6 +4,30 @@ import torch.nn as nn
 # true deq-> get grads via autograd 
 # implicit bw pass: (I-Jf(z*)^T)v = dL/dz*
 
+# ensure we run imnplicit diff instead of the naive
+
+class DEQImplicitFunction(torch.autograd.Function):
+    # passes the z_star through along w eqm map and the solver method. uses ctx as a messenger
+    @staticmethod
+    def forward(ctx, z_star, eqm_map, solver, max_iters):
+        ctx.save_for_backward(z_star, eqm_map)
+        ctx.max_iters = max_iters
+        ctx.solver = solver
+        ctx.layer_params = list(solver.__self__.layer.parameters())
+        return z_star
+    
+    # takes the ctx, unpacks whatever tensors and non tensors are saved to calculate the new grads
+    @staticmethod
+    def backward(ctx, grad_out):      
+        z_star, eqm_map = ctx.saved_tensors
+        solver = ctx.solver
+        v = solver(z_star, eqm_map, grad_out, ctx.max_iters)
+        param_grads = torch.autograd.grad(eqm_map, ctx.layer_params, grad_outputs=v, retain_graph=True)
+        for param, grad in zip(ctx.layer_params, param_grads):
+            param.grad = grad
+        return v, None, None, None
+
+
 class DEQImplicitModel(nn.Module):
     def __init__(self,
     vocab_size, 
@@ -97,15 +121,17 @@ class DEQImplicitModel(nn.Module):
         x = x + self.pos_embeddings(positions)
         # padding
         padding = (attention_mask==0)
-        with torch.no_grad():
-            # solve for eqm
-            z = self.solve_eqm(x, padding=padding, trace=trace)
+        # solve for eqm
+        z = self.solve_eqm(x, padding=padding, trace=trace)
         # re-engage autograd
         z_star = z.detach().requires_grad_(True)
         eqm_map = self.get_deq_map(z_star, x, padding)
+        max_iters = self.max_iters_train if self.training else self.max_iters_eval
+        # apply implicit diffn
+        z_star = DEQImplicitFunction.apply(z_star, eqm_map, self.solve_system, max_iters)
         # mean pooling
         mask = attention_mask.unsqueeze(-1).float()
-        summation = (eqm_map*mask).sum(dim=1)
+        summation = (z_star*mask).sum(dim=1)
         total = mask.sum(dim=1).clamp(min=1.0)
         pool = summation/total
         # classify
