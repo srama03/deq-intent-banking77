@@ -25,7 +25,7 @@ class BaselineModel(nn.Module):
         self.encoder = nn.TransformerEncoder(self.encoder_layer, num_layers)
         self.classifier = nn.Linear(d_model, num_labels)
 
-    def forward(self, input_ids, attention_mask):
+    def forward(self, input_ids, attention_mask, trace=False):
         """
         input_ids: (B, T)
         attention_mask: (B,T)

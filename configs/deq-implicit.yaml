@@ -1,5 +1,5 @@
 experiment:
-  name: "deq_transformer_banking77"
+  name: "deq_implicit_banking77"
   seed: 42
   device: "auto"
   output_dir: "results/runs"
@@ -12,11 +12,11 @@ data:
   tokenizer_name: "bert-base-uncased"
 
 model:
-  type: "deq_transformer"
+  type: "deq_implicit"
   d_model: 256
   n_heads: 4
   d_ff: 1024
-  dropout: 0.0
+  dropout: 0.1
   activation: "gelu"
   norm: "preln"
   pooling: "mean"
@@ -24,10 +24,10 @@ model:
 deq:
   solver: "fixed_point"
   tol: 1.0e-2
-  max_iters_train: 100
-  max_iters_eval: 120
+  max_iters_train: 25
+  max_iters_eval: 50
   log_convergence: true
-  alpha: 0.1
+  alpha: 0.5
 
 train:
   batch_size: 32
@@ -44,4 +44,3 @@ metrics:
   report:
     - "accuracy"
     - "macro_f1"
-
