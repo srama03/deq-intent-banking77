@@ -119,7 +119,6 @@ def eval_one_epoch(model, dataloader, device):
         "val_acc": correct / max(seen, 1),
         "val_macro_f1": macro_f1
     }
-#ADD BRANCHING FOR TRUE DEQ 
 
 def main(config_path="configs/baseline.yaml"):
     # configs
