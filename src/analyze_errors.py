@@ -34,9 +34,7 @@ def get_preds_labs(model, dataloader, device):
         labels = batch["labels"].to(device)
         # get logits
         logits = model(input_ids, attention_mask)
-        
-        # compute batch size
-        bs = labels.size(0)
+
         # compute preds= argmax of scores from logits
         preds = logits.argmax(dim=-1)
         
