@@ -16,7 +16,7 @@ A 3-layer Pre-LN Transformer encoder trained from scratch, serving as the explic
 As an ablation between explicit and implicit depth, a weight-tied encoder is iterated to a fixed point z\* = f(z\*, x) via damped fixed-point iteration. Same architecture as the baseline, but with a single shared layer instead of 3 distinct ones. Gradients backpropagate through the unrolled iterations. Achieved 84.1% macro-F1 on clean, 74.5% on noisy.
 
 ### True DEQ
-The true DEQ uses the same fixed-point forward pass as the weight-tied model, but replaces unrolled backpropagation with implicit differentiation via the Implicit Function Theorem. A custom `torch.autograd.Function` intercepts the backward pass, solving (I − J_f^T)v = g to compute parameter gradients directly at equilibrium—no solver iterations stored in the computation graph. Achieved 82.8% macro-F1 on clean, 73.4% on noisy.
+The true DEQ uses the same fixed-point forward pass as the weight-tied model, but replaces unrolled backpropagation with implicit differentiation via the Implicit Function Theorem. A custom `torch.autograd.Function` intercepts the backward pass, solving $(I - J_f^T)v = g$ to compute parameter gradients directly at equilibrium—no solver iterations stored in the computation graph. Achieved 82.8% macro-F1 on clean, 73.4% on noisy.
 
 ## Results
 
