@@ -49,6 +49,9 @@ True DEQ has the lowest F1, but its error patterns overlap a lot with the baseli
 - Run on a larger sequence modeling task with GPU access to see DEQ's memory efficiency in practice
 - Explore whether better solver convergence closes the gap between true DEQ and DEQ-like
 
+## Demo
+[Live on HuggingFace Spaces](https://huggingface.co/spaces/srama03/deq-intent-banking77)
+
 ## Setup
 ```bash
 # setup
